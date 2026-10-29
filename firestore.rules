@@ -1,0 +1,151 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /default-questions/{questionId} {
+      allow read: if true;
+
+      allow write: if request.auth != null &&
+        (request.auth.token.developer == true || request.auth.token.admin == true);
+    }
+
+    match /custom_quizzes/{quizId} {
+      allow read: if resource.data.metadata.isPublic == true ||
+        (request.auth != null && resource.data.creator.uid == request.auth.uid);
+
+      allow create: if request.auth != null &&
+        request.resource.data.creator.uid == request.auth.uid;
+
+      allow update, delete: if request.auth != null &&
+        resource.data.creator.uid == request.auth.uid;
+    }
+
+    match /flashcard_decks/{deckId} {
+      allow read: if resource.data.isPublic == true ||
+        (request.auth != null && resource.data.creatorId == request.auth.uid);
+
+      allow create: if request.auth != null &&
+        request.resource.data.creatorId == request.auth.uid;
+
+      allow update, delete: if request.auth != null &&
+        resource.data.creatorId == request.auth.uid;
+    }
+
+    match /quiz_results/{resultId} {
+      allow read: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+
+      allow create: if request.auth != null &&
+        request.resource.data.userId == request.auth.uid;
+
+      allow update, delete: if false;
+    }
+
+    match /studyMaterials/{materialId} {
+      allow read: if resource.data.isPublic == true ||
+        (request.auth != null && resource.data.createdBy == request.auth.uid);
+
+      allow create: if request.auth != null;
+
+      allow update, delete: if request.auth != null &&
+        resource.data.createdBy == request.auth.uid;
+    }
+
+    match /study_sessions/{sessionId} {
+      allow read: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+
+      allow create: if request.auth != null &&
+        request.resource.data.userId == request.auth.uid;
+
+      allow update: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+
+      allow delete: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+    }
+
+    match /quiz_drafts/{draftId} {
+      allow read: if request.auth != null;
+    
+      allow create: if request.auth != null &&
+        request.resource.data.userId == request.auth.uid;
+    
+      allow update, delete: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+    }
+
+    match /users/{userId}/{allPaths=**} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+
+    }
+
+    match /usernames/{usernameId} {
+      allow read: if true;
+      allow create, update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    match /users_public/{userId} {
+      allow read: if true;
+      allow create, update: if request.auth != null && request.auth.uid == request.auth.uid;
+      allow delete: if request.auth != null && resource.auth.uid == request.auth.uid;
+    }
+
+    match /feedback/{feedbackId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null && request,auth.uid == userId;
+    }
+
+    match /polls/{pollId} {
+      allow read: if true;
+
+      allow create: if request.auth != null
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.joinCode is string
+        && request.resource.data.question is string
+        && request.resource.data.options is list
+        && request.resource.data.votes is list
+        && request.resource.data.options.size() >= 2
+        && request.resource.data.options.size() <= 10
+        && request.resource.data.votes.size() == request.resource.data.options.size()
+        && request.resource.data.status in ['open', 'closed'];
+
+      allow update: if (
+          request.auth != null
+          && resource.data.createdBy == request.auth.uid
+          && resource.data.status in ['open', 'closed']
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['status', 'showLiveResults', 'updatedAt', 'endedAt'])
+          && (
+            request.resource.data.status in ['open', 'closed'] ||
+            request.resource.data.status == 'ended'
+          )
+        ) || (
+          request.auth != null
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['votes', 'updatedAt'])
+          && request.resource.data.votes is list
+          && request.resource.data.votes.size() == resource.data.options.size()
+          && resource.data.status == 'open'
+          && !exists(/databases/$(database)/documents/polls/$(pollId)/votes/$(request.auth.uid))
+          && existsAfter(/databases/$(database)/documents/polls/$(pollId)/votes/$(request.auth.uid))
+        );
+
+      allow delete: if false;
+
+      match /votes/{userId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null
+          && request.auth.uid == userId
+          && get(/databases/$(database)/documents/polls/$(pollId)).data.status == 'open'
+          && request.resource.data.optionIndexes is list
+          && request.resource.data.optionIndexes.size() > 0
+          && request.resource.data.optionIndexes.size() <= get(/databases/$(database)/documents/polls/$(pollId)).data.options.size();
+        allow update, delete: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

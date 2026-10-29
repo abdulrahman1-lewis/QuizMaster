@@ -1,0 +1,20 @@
+{
+  "projects": {
+    "default": "quizmaster-c66a2",
+    "staging": "quizmaster-c66a2",
+    "quizmaster": "quizmaster-c66a2"
+  },
+  "targets": {
+    "quizmaster-c66a2": {
+      "hosting": {
+        "prod": [
+          "quizmaster-4006b"
+        ],
+        "development": [
+          "quizmaster-testing-new"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
