@@ -267,11 +267,7 @@ function App() {
                 </PrivateRoute>
               }/>
 
-              <Route path="/instructions" element={
-                <PrivateRoute>
-                  <Instructions />
-                </PrivateRoute>
-              }/>
+              <Route path="/instructions" element={<Instructions />} />
 
               <Route path="/profile" element={
                 <PrivateRoute>
