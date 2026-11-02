@@ -4,7 +4,7 @@ import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import '../../config/firebase';
 
-export const appVersion = '2.3.0';
+export const appVersion = '2.3.5';
 export const appVersionState = {
   value: appVersion,
 };
